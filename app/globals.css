@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+@theme {
+  /* Overlay365 Visual Identity */
+  --color-midnight: #05060a;
+  --color-graphite: #0e1117;
+  --color-slate-deep: #141924;
+  --color-cyan-elec: #22d3ee;
+  --color-gold: #f5c451;
+  --color-gold-soft: #f7d983;
+  --color-amber-deep: #f59e0b;
+  --color-soft-white: #f6f7f9;
+
+  --color-teal-brand: #14b8a6;
+  --color-blue-brand: #4f6ef7;
+
+  --font-display: var(--font-display, "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif);
+  --font-body: var(--font-body, "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif);
+  --font-serif: var(--font-serif, "Instrument Serif", ui-serif, Georgia, serif);
+
+  --animate-grid-pan: grid-pan 24s linear infinite;
+  --animate-float: float 8s ease-in-out infinite;
+  --animate-float-slow: float 12s ease-in-out infinite;
+  --animate-aurora: aurora 18s ease-in-out infinite;
+  --animate-aurora-2: aurora 22s ease-in-out infinite reverse;
+  --animate-shimmer: shimmer 3.5s linear infinite;
+  --animate-marquee: marquee 32s linear infinite;
+  --animate-pulse-glow: pulse-glow 4s ease-in-out infinite;
+
+  @keyframes grid-pan {
+    0% { background-position: 0 0; }
+    100% { background-position: 64px 64px; }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-18px); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes aurora {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(60px, -40px) scale(1.15); }
+    66% { transform: translate(-40px, 30px) scale(0.95); }
+  }
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-midnight);
+  color: var(--color-soft-white);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background-color: color-mix(in srgb, var(--color-cyan-elec) 35%, transparent);
+  color: var(--color-soft-white);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--color-midnight); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--color-cyan-elec), var(--color-gold));
+  border-radius: 8px;
+}
+
+/* ---------- Premium lettering ---------- */
+.text-gradient-cyan-gold {
+  background: linear-gradient(100deg, var(--color-cyan-elec) 0%, var(--color-gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-soft {
+  background: linear-gradient(90deg, var(--color-soft-white) 0%, color-mix(in srgb, var(--color-gold) 75%, var(--color-soft-white)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-shimmer {
+  background: linear-gradient(110deg, #f6f7f9 40%, var(--color-gold) 50%, var(--color-cyan-elec) 55%, #f6f7f9 60%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 3.5s linear infinite;
+}
+
+.serif-accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Animated grid background ---------- */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(34, 211, 238, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* ---------- Glass surface ---------- */
+.glass {
+  background: rgba(14, 17, 23, 0.55);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- Radial spotlight that follows the mouse ---------- */
+.spotlight {
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(245, 196, 81, 0.10), rgba(34, 211, 238, 0.06) 30%, transparent 60%);
+}
+
+/* ---------- Gradient border (conic, animated) ---------- */
+.gradient-border {
+  position: relative;
+  background:
+    linear-gradient(var(--card-bg, #0e1117), var(--card-bg, #0e1117)) padding-box,
+    linear-gradient(135deg, rgba(34,211,238,0.6), rgba(245,196,81,0.5), rgba(79,110,247,0.5)) border-box;
+  border: 1px solid transparent;
+}
+
+.gradient-border-animated {
+  position: relative;
+  background:
+    linear-gradient(var(--card-bg, #0e1117), var(--card-bg, #0e1117)) padding-box,
+    linear-gradient(135deg, #22d3ee, #f5c451, #4f6ef7, #22d3ee) border-box;
+  border: 1px solid transparent;
+  background-size: 300% 300%;
+  animation: gradient-slide 6s ease infinite;
+}
+
+@keyframes gradient-slide {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ---------- 3D tilt helpers ---------- */
+.perspective-1200 {
+  perspective: 1200px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+/* ---------- Noise texture ---------- */
+.noise::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Magnetic button base ---------- */
+.magnetic {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
