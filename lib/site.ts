@@ -35,7 +35,7 @@ export const PLATFORMS: PlatformLink[] = [
     tagline: 'Manage wellness, advocate for better care.',
     description:
       'Providing actionable tools to manage personal wellness, advocate for better care, and close health disparity gaps — rooted in ancestral nutrition and heritage remedies.',
-    url: 'https://overlay-health.vercel.app',
+    url: 'https://uplift-health.vercel.app',
     logo: '/health.png',
     accent: 'teal',
     cta: 'Enter Health',
@@ -47,7 +47,7 @@ export const PLATFORMS: PlatformLink[] = [
     tagline: 'Build literacy, growth, and generational wealth.',
     description:
       'Delivering strategies and resources for financial literacy, economic growth, and building generational wealth — through courses, simulators, and gamified learning.',
-    url: 'https://overlay-wealth.onrender.com',
+    url: 'https://uplift-wealth.onrender.com',
     logo: '/wealth.png',
     accent: 'gold',
     cta: 'Enter Wealth',
@@ -59,7 +59,7 @@ export const PLATFORMS: PlatformLink[] = [
     tagline: 'Navigate the system, advocate for your rights.',
     description:
       'Equipping you with the resources and knowledge needed to navigate the legal system, advocate for your rights, and drive systemic fairness.',
-    url: 'https://overlay-justice.vercel.app',
+    url: 'https://uplift-justice.vercel.app',
     logo: '/justice.png',
     accent: 'cyan',
     cta: 'Enter Justice',
