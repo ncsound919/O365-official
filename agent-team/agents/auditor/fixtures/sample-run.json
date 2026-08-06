@@ -5,6 +5,12 @@
     "https://uplift-justice.vercel.app",
     "https://overlay365.com"
   ],
+  "siteLabels": [
+    "Overlay Health",
+    "Overlay Wealth (Render)",
+    "Overlay Justice",
+    "Overlay365 parent"
+  ],
   "paymentLinks": [
     { "name": "Stripe donate", "url": "https://buy.stripe.com/test_donate" },
     { "name": "CashApp", "url": "https://cash.app/$overlay365" },

@@ -19,6 +19,8 @@ type ConsistencyUnion = ReturnType<typeof checkDataConsistency>;
 
 export interface AuditorRunInput {
   sites: string[];
+  /** Optional product labels for each site (e.g. "Overlay Health"). */
+  siteLabels?: string[];
   paymentLinks: Array<{ name: string; url: string }>;
   /** Crawl target for broken-link check. */
   crawlBaseUrl?: string;
@@ -36,6 +38,13 @@ export async function runAuditor(input: AuditorRunInput): Promise<AuditorReport>
 
   const overallStatus: AuditorReport["overallStatus"] =
     downCount > 1 ? "critical" : downCount > 0 || paymentDegraded ? "degraded" : "healthy";
+
+  // Attach product labels for display (labels[i] corresponds to sites[i]).
+  if (input.siteLabels) {
+    uptime.forEach((u, i) => {
+      if (input.siteLabels?.[i]) u.url = `${input.siteLabels[i]} (${u.url})`;
+    });
+  }
 
   return {
     runTimestamp: new Date().toISOString(),

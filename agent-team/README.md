@@ -1,8 +1,19 @@
 # Overlay365 Agent Team
 
-Business-operations agents for the Overlay365 platforms (Health / Wealth /
-Justice). Built **on top of existing GitHub agents** — not from scratch — and
-rounded out with Draymond registry components.
+Business-operations agents for the Overlay365 platforms — **Overlay Health**,
+**Overlay Wealth**, **Overlay Justice** (renamed from "The Uplift Lab"), with
+`O365-official` as the parent site. Built **on top of existing GitHub agents**
+— not from scratch — and rounded out with Draymond registry components.
+
+**Platforms / deployment:**
+- Overlay Health — `uplift-health.vercel.app` (Vercel), repo `ncsound919/uplift-code`
+- Overlay Wealth — `uplift-wealth.onrender.com` (**Render**), repo `ncsound919/Uplift-Wealth-`
+- Overlay Justice — `uplift-justice.vercel.app` (Vercel), no public source repo yet
+- Parent — `overlay365.com`, repo `ncsound919/O365-official`
+
+**GitHub account model (confirmed):** all new builds live under `ncsound919`;
+`tap919` holds legacy repos. The Strategist's GitHub issues source queries
+`ncsound919` product repos by default and supports adding `tap919` legacy repos.
 
 ```
 [Diagnostic Agents] → [Evidence Compiler] → [LLM Harness] → [Report Output]
@@ -20,6 +31,21 @@ id that doesn't exist in the evidence set.
 | **The Treasurer** — cash pulse (Stripe/CashApp/Venmo) | Weekly | `progrmoiz/stripe-pulse` MRR/ARR math | `finance`, `stock-analysis`, `charts`, `xlsx` |
 | **The Guardian** — compliance flagging (Justice/Health) | On content change | `talvinder/carrot-ai-pm` rule interface; `purpleroc/mcp-security-inspector` | `skill-vetter`, `book-synthesis`, `qingyan-research` |
 | **The Auditor** — deterministic site integrity | Weekly | `tldraw/tldraw` + `mex-memory/mex` link checkers; `sundial-org/awesome-openclaw` web-qa-bot | Draymond `monitors.ts`, `web-reader`, `web-search`, `coding-agent`, `charts` |
+
+## Marketing team (deterministic, led by The Observer)
+
+Expanded from the Social Media Dashboard into a deterministic marketing team.
+The Observer (lead) consolidates four rule-based members into the weekly
+**Marketing Pulse** memo — every action item cites which member produced it.
+
+| Member | Function | Draymond skills |
+|---|---|---|
+| **The Voice Keeper** | Brand-voice guard vs uploaded guidelines corpus (fail-closed) | `overlay-marketing`, `seo-content-writer`, `content-strategy` |
+| **The Scheduler** | Deterministic weekly editorial calendar (per-platform cadence) | `overlay-marketing`, `content-strategy`, `blog-writer` |
+| **The Format Auditor** | Per-platform format checks (chars, hashtags, links) | `overlay-marketing`, `seo-content-writer` |
+| **The Tracker** | Engagement aggregation + anomalies (null-safe) | `overlay-marketing`, `charts`, `xlsx` |
+
+Run: `npx tsx agents/marketing/index.ts --seeds="overlay health,wealth tips"`
 
 ## Run
 
@@ -56,10 +82,14 @@ npm run agents:auditor     # hits the live overlay365 sites (read-only)
 
 ## Unresolved inputs (hard stops, not guesses)
 
-1. Exact GitHub repo names under `tap919` (Strategist GitHub issues source).
+1. Justice platform has **no public source repo** — GitHub issues source covers
+   Health (`uplift-code`), Wealth (`Uplift-Wealth-`), and the parent
+   (`O365-official`) under `ncsound919`; `tap919` legacy repos can be added via
+   `discoverRepos()`.
 2. Whether an in-app feedback widget exists.
 3. Whether Stripe products/prices carry platform metadata.
 4. Expense-tracking source location (Treasurer `topExpenseCategory`).
-5. ToS / Privacy Policy / content guidelines (Guardian rule corpus).
+5. ToS / Privacy Policy / content guidelines (Guardian rule corpus) AND
+   Overlay365 brand guidelines (Voice Keeper corpus).
 6. Justice/Health repo + content-file structure (Guardian content diff).
 7. Whether Health/Wealth/Justice share a data model (Auditor data consistency).

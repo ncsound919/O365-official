@@ -3,6 +3,8 @@
  */
 import { compileClusters } from "./cluster.js";
 import { toEvidenceItems, fetchFromExportedJson } from "./sources/supportEmail.js";
+import { fetchGithubIssues, type GithubIssuesConfig } from "./sources/githubIssues.js";
+import { DEFAULT_GITHUB_CONFIG } from "./sources/githubRepos.js";
 import type { ScoringWeights } from "../shared/scoring.js";
 import { runHarness, type LLMHarnessInput } from "../shared/llmHarness.js";
 import { renderAgentReport } from "../shared/reportRenderer.js";
@@ -21,6 +23,10 @@ export interface StrategistRunInput {
   periodEnd: string;
   /** Manually exported support emails. */
   supportEmailFile?: string;
+  /** GitHub issues config (defaults to confirmed ncsound919 product repos). */
+  githubConfig?: GithubIssuesConfig;
+  /** Disable the live GitHub fetch (used by tests / offline runs). */
+  skipGithub?: boolean;
   /** Extra items (e.g. from GitHub issues) already normalized. */
   extraItems?: EvidenceItem[];
   /** Injectable LLM for the narrative layer (optional — falls back to template). */
@@ -43,6 +49,15 @@ export async function runStrategist(input: StrategistRunInput): Promise<{
     }
   } else {
     excludedReasons.push("support-email: no export file provided (manual import pending)");
+  }
+
+  if (input.githubConfig && !input.skipGithub) {
+    try {
+      const issues = await fetchGithubIssues(input.githubConfig, input.periodStart, input.periodEnd);
+      allItems.push(...issues);
+    } catch (err) {
+      excludedReasons.push(`github-issues: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   if (input.extraItems) allItems.push(...input.extraItems);
@@ -119,13 +134,16 @@ export async function runStrategist(input: StrategistRunInput): Promise<{
   return { report, markdown: renderAgentReport(report, clusterLabels) };
 }
 
-// CLI entrypoint: tsx agents/strategist/index.ts --email=fixtures/sample-period.json
+// CLI entrypoint: tsx agents/strategist/index.ts --email=fixtures/sample-period.json [--github]
 if (process.argv[1] && process.argv[1].endsWith("index.ts")) {
   const argEmail = process.argv.find((a) => a.startsWith("--email="))?.split("=")[1];
+  const useGithub = process.argv.includes("--github");
   runStrategist({
     periodStart: "2026-07-20T00:00:00Z",
     periodEnd: "2026-08-02T00:00:00Z",
     supportEmailFile: argEmail,
+    githubConfig: useGithub ? DEFAULT_GITHUB_CONFIG : undefined,
+    skipGithub: !useGithub,
   }).then(({ report, markdown }) => {
     console.log(JSON.stringify(report, null, 2));
     console.log("\n--- markdown ---\n");
