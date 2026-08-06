@@ -14,9 +14,11 @@ export interface TreasurerRunInput {
   mrr?: number | null;
   mrrConfidence?: CashPulse["mrrConfidence"];
   priorWeeksByRail?: Record<Rail, number>[];
+  /** Market context fed by Draymond (crypto + stocks + brief) — informational. */
+  marketContext?: { crypto?: Record<string, number>; stocks?: Array<{ symbol: string; price?: number }>; brief?: string };
 }
 
-export async function runTreasurer(input: TreasurerRunInput): Promise<{ pulse: CashPulse; markdown: string }> {
+export async function runTreasurer(input: TreasurerRunInput): Promise<{ pulse: CashPulse; markdown: string; market: string }> {
   const cashappItems = input.cashappCsvFile ? importManualCsv(input.cashappCsvFile) : [];
   const venmoItems = input.venmoCsvFile ? importManualCsv(input.venmoCsvFile) : [];
 
@@ -31,7 +33,23 @@ export async function runTreasurer(input: TreasurerRunInput): Promise<{ pulse: C
     priorWeeksByRail: input.priorWeeksByRail,
   });
 
-  return { pulse, markdown: renderCashPulse(pulse) };
+  // Best-effort market snapshot (no key needed for CoinGecko).
+  let market = input.marketContext?.brief ?? "";
+  const crypto = input.marketContext?.crypto;
+  if (!market) {
+    try {
+      const { cryptoPrices } = await import("../shared/market.js");
+      const prices = crypto ?? (await cryptoPrices());
+      if (Object.keys(prices).length) {
+        market = `Market: ${Object.entries(prices).map(([k, v]) => `${k.toUpperCase()}=$${Math.round(v)}`).join(", ")}.`;
+      }
+    } catch {
+      /* market fetch unavailable — omit */
+    }
+  }
+
+  const markdown = renderCashPulse(pulse) + (market ? `\n\n## Market Context\n\n${market}` : "");
+  return { pulse, markdown, market };
 }
 
 // CLI: tsx agents/treasurer/index.ts --cashapp=fixtures/sample-cashapp.csv
