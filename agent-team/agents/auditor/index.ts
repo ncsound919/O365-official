@@ -39,7 +39,7 @@ export async function runAuditor(input: AuditorRunInput): Promise<AuditorReport>
   const brokenLinks = input.crawlBaseUrl ? await checkBrokenLinks(input.crawlBaseUrl) : [];
   const paymentFlow = await checkPaymentFlow(input.paymentLinks);
   const dataConsistency = checkDataConsistency();
-  const repoHealth = checkRepoHealth(input.repoHealth);
+  const repoHealth = await checkRepoHealth(input.repoHealth);
   const siteQa = await runSiteQa(input.siteQa);
 
   const downCount = uptime.filter((u) => !u.ok).length;

@@ -28,6 +28,10 @@ export interface RepoHealthOptions {
   enableNuclei?: boolean;
   /** URLs to scan with nuclei (defaults to the Overlay365 sites). */
   nucleiTargets?: string[];
+  /** Enable VirusTotal URL report checks (needs VIRUSTOTAL_API_KEY). */
+  enableVirusTotal?: boolean;
+  /** URLs to check via VirusTotal (defaults to the Overlay365 sites). */
+  virusTotalTargets?: string[];
 }
 
 function which(tool: string): boolean {
@@ -39,7 +43,7 @@ function which(tool: string): boolean {
   }
 }
 
-export function checkRepoHealth(opts: RepoHealthOptions = {}): RepoHealthResult[] {
+export async function checkRepoHealth(opts: RepoHealthOptions = {}): Promise<RepoHealthResult[]> {
   const results: RepoHealthResult[] = [];
 
   // Heisenberg supply-chain health (deps.dev + SBOM).
@@ -186,6 +190,47 @@ export function checkRepoHealth(opts: RepoHealthOptions = {}): RepoHealthResult[
           });
         }
       }
+    }
+  }
+
+  // VirusTotal URL reputation (key-gated — VIRUSTOTAL_API_KEY).
+  if (opts.enableVirusTotal) {
+    const apiKey = process.env.VIRUSTOTAL_API_KEY;
+    if (!apiKey) {
+      results.push({
+        check: "url-reputation (virustotal)",
+        status: "not-available",
+        detail: "VIRUSTOTAL_API_KEY not configured",
+        tool: "virustotal",
+      });
+    } else {
+      let malicious = 0;
+      const detail: string[] = [];
+      for (const url of (opts.virusTotalTargets ?? []).slice(0, 4)) {
+        try {
+          const enc = Buffer.from(url).toString("base64url");
+          const res = await fetch(`https://www.virustotal.com/api/v3/urls/${enc}`, {
+            headers: { "x-apikey": apiKey },
+            signal: AbortSignal.timeout(15_000),
+          });
+          if (res.ok) {
+            const data = (await res.json()) as { data?: { attributes?: { last_analysis_stats?: { malicious?: number } } } };
+            const m = data.data?.attributes?.last_analysis_stats?.malicious ?? 0;
+            malicious += m;
+            detail.push(`${new URL(url).host}: ${m}`);
+          } else {
+            detail.push(`${new URL(url).host}: HTTP ${res.status}`);
+          }
+        } catch {
+          detail.push(`${new URL(url).host}: error`);
+        }
+      }
+      results.push({
+        check: "url-reputation (virustotal)",
+        status: malicious > 0 ? "fail" : "pass",
+        detail: detail.length ? detail.join(", ") : "no targets configured",
+        tool: "virustotal",
+      });
     }
   }
 

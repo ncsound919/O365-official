@@ -73,8 +73,8 @@ describe("Auditor", () => {
     expect(checkDataConsistency()).toBe("not-yet-defined");
   });
 
-  it("repo health reports not-available (fail-closed) when heisenberg is absent", () => {
-    const results = checkRepoHealth({ packages: ["next@1.0.0"] });
+  it("repo health reports not-available (fail-closed) when heisenberg is absent", async () => {
+    const results = await checkRepoHealth({ packages: ["next@1.0.0"] });
     const supply = results.find((r) => r.check.startsWith("supply-chain"));
     expect(supply?.status).toBe("not-available");
     expect(supply?.detail).toContain("heisenberg");
