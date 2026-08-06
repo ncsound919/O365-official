@@ -3,6 +3,7 @@ import { checkUptime } from "../agents/auditor/checks/uptime.js";
 import { checkBrokenLinks } from "../agents/auditor/checks/brokenLinks.js";
 import { checkPaymentFlow } from "../agents/auditor/checks/paymentFlowIntegrity.js";
 import { checkDataConsistency } from "../agents/auditor/checks/dataConsistency.js";
+import { checkRepoHealth } from "../agents/auditor/checks/repoHealth.js";
 
 function mockFetchMap(responses: Record<string, { status: number; body?: string }>) {
   const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -70,5 +71,12 @@ describe("Auditor", () => {
 
   it("data consistency is not-yet-defined until user specifies the model", () => {
     expect(checkDataConsistency()).toBe("not-yet-defined");
+  });
+
+  it("repo health reports not-available (fail-closed) when heisenberg is absent", () => {
+    const results = checkRepoHealth({ packages: ["next@1.0.0"] });
+    const supply = results.find((r) => r.check.startsWith("supply-chain"));
+    expect(supply?.status).toBe("not-available");
+    expect(supply?.detail).toContain("heisenberg");
   });
 });

@@ -11,6 +11,7 @@ function auditor(status: "healthy" | "degraded" | "critical"): AuditorReport {
     brokenLinks: [],
     paymentFlow: { checks: [], overall: "ok" },
     dataConsistency: "not-yet-defined",
+    repoHealth: [],
     overallStatus: status,
   };
 }

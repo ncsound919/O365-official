@@ -5,6 +5,7 @@ import { checkUptime, type UptimeResult } from "./checks/uptime.js";
 import { checkBrokenLinks, type BrokenLinkResult } from "./checks/brokenLinks.js";
 import { checkPaymentFlow, type PaymentFlowResult } from "./checks/paymentFlowIntegrity.js";
 import { checkDataConsistency } from "./checks/dataConsistency.js";
+import { checkRepoHealth, type RepoHealthResult, type RepoHealthOptions } from "./checks/repoHealth.js";
 
 export interface AuditorReport {
   runTimestamp: string;
@@ -12,6 +13,7 @@ export interface AuditorReport {
   brokenLinks: BrokenLinkResult[];
   paymentFlow: PaymentFlowResult;
   dataConsistency: ConsistencyUnion;
+  repoHealth: RepoHealthResult[];
   overallStatus: "healthy" | "degraded" | "critical";
 }
 
@@ -24,6 +26,8 @@ export interface AuditorRunInput {
   paymentLinks: Array<{ name: string; url: string }>;
   /** Crawl target for broken-link check. */
   crawlBaseUrl?: string;
+  /** Supply-chain/SCA checks (heisenberg + optional dep-scan/nuclei). */
+  repoHealth?: RepoHealthOptions;
 }
 
 export async function runAuditor(input: AuditorRunInput): Promise<AuditorReport> {
@@ -31,13 +35,15 @@ export async function runAuditor(input: AuditorRunInput): Promise<AuditorReport>
   const brokenLinks = input.crawlBaseUrl ? await checkBrokenLinks(input.crawlBaseUrl) : [];
   const paymentFlow = await checkPaymentFlow(input.paymentLinks);
   const dataConsistency = checkDataConsistency();
+  const repoHealth = checkRepoHealth(input.repoHealth);
 
   const downCount = uptime.filter((u) => !u.ok).length;
   const brokenCount = brokenLinks.filter((b) => !b.ok).length;
   const paymentDegraded = paymentFlow.overall !== "ok";
+  const repoFail = repoHealth.some((r) => r.status === "fail");
 
   const overallStatus: AuditorReport["overallStatus"] =
-    downCount > 1 ? "critical" : downCount > 0 || paymentDegraded ? "degraded" : "healthy";
+    downCount > 1 ? "critical" : downCount > 0 || paymentDegraded || repoFail ? "degraded" : "healthy";
 
   // Attach product labels for display (labels[i] corresponds to sites[i]).
   if (input.siteLabels) {
@@ -52,6 +58,7 @@ export async function runAuditor(input: AuditorRunInput): Promise<AuditorReport>
     brokenLinks,
     paymentFlow,
     dataConsistency,
+    repoHealth,
     overallStatus,
   };
 }
@@ -88,6 +95,13 @@ export function renderAuditorReport(report: AuditorReport): string {
       ? `_Not yet defined — awaiting user definition of the shared data model._`
       : `${JSON.stringify(report.dataConsistency)}`
   );
+  lines.push(``);
+  lines.push(`## Repo / Supply-Chain Health`);
+  lines.push(``);
+  if (report.repoHealth.length === 0) lines.push(`_Not configured._`);
+  for (const r of report.repoHealth) {
+    lines.push(`- [${r.status.toUpperCase()}] ${r.check} — ${r.detail}`);
+  }
   return lines.join("\n");
 }
 
