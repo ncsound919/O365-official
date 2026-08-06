@@ -23,5 +23,10 @@
     "enableDepScan": true,
     "enableNuclei": true,
     "nucleiTargets": ["https://overlay365.com"]
+  },
+  "siteQa": {
+    "agentBrowserUrl": "http://localhost:3000",
+    "agentBrowserApiKey": "test",
+    "suite": "all"
   }
 }

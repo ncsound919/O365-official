@@ -6,6 +6,7 @@ import { checkBrokenLinks, type BrokenLinkResult } from "./checks/brokenLinks.js
 import { checkPaymentFlow, type PaymentFlowResult } from "./checks/paymentFlowIntegrity.js";
 import { checkDataConsistency } from "./checks/dataConsistency.js";
 import { checkRepoHealth, type RepoHealthResult, type RepoHealthOptions } from "./checks/repoHealth.js";
+import { runSiteQa, type SiteQaSummary, type SiteQaOptions } from "./checks/siteQa.js";
 
 export interface AuditorReport {
   runTimestamp: string;
@@ -14,6 +15,7 @@ export interface AuditorReport {
   paymentFlow: PaymentFlowResult;
   dataConsistency: ConsistencyUnion;
   repoHealth: RepoHealthResult[];
+  siteQa: SiteQaSummary;
   overallStatus: "healthy" | "degraded" | "critical";
 }
 
@@ -28,6 +30,8 @@ export interface AuditorRunInput {
   crawlBaseUrl?: string;
   /** Supply-chain/SCA checks (heisenberg + optional dep-scan/nuclei). */
   repoHealth?: RepoHealthOptions;
+  /** Playwright QA via AgentBrowser (set AGENTBROWSER_URL + AGENTBROWSER_API_KEY). */
+  siteQa?: SiteQaOptions;
 }
 
 export async function runAuditor(input: AuditorRunInput): Promise<AuditorReport> {
@@ -36,14 +40,16 @@ export async function runAuditor(input: AuditorRunInput): Promise<AuditorReport>
   const paymentFlow = await checkPaymentFlow(input.paymentLinks);
   const dataConsistency = checkDataConsistency();
   const repoHealth = checkRepoHealth(input.repoHealth);
+  const siteQa = await runSiteQa(input.siteQa);
 
   const downCount = uptime.filter((u) => !u.ok).length;
   const brokenCount = brokenLinks.filter((b) => !b.ok).length;
   const paymentDegraded = paymentFlow.overall !== "ok";
   const repoFail = repoHealth.some((r) => r.status === "fail");
+  const qaFail = siteQa.status === "fail" || siteQa.status === "partial";
 
   const overallStatus: AuditorReport["overallStatus"] =
-    downCount > 1 ? "critical" : downCount > 0 || paymentDegraded || repoFail ? "degraded" : "healthy";
+    downCount > 1 ? "critical" : downCount > 0 || paymentDegraded || repoFail || qaFail ? "degraded" : "healthy";
 
   // Attach product labels for display (labels[i] corresponds to sites[i]).
   if (input.siteLabels) {
@@ -59,6 +65,7 @@ export async function runAuditor(input: AuditorRunInput): Promise<AuditorReport>
     paymentFlow,
     dataConsistency,
     repoHealth,
+    siteQa,
     overallStatus,
   };
 }
@@ -101,6 +108,20 @@ export function renderAuditorReport(report: AuditorReport): string {
   if (report.repoHealth.length === 0) lines.push(`_Not configured._`);
   for (const r of report.repoHealth) {
     lines.push(`- [${r.status.toUpperCase()}] ${r.check} — ${r.detail}`);
+  }
+  lines.push(``);
+  lines.push(`## Site QA (Playwright)`);
+  lines.push(``);
+  if (report.siteQa.status === "not-available") {
+    lines.push(`_${report.siteQa.detail}_`);
+  } else {
+    lines.push(
+      `- **${report.siteQa.status.toUpperCase()}** — ${report.siteQa.passed} passed, ${report.siteQa.failed} failed, ${report.siteQa.errored} errored (${report.siteQa.detail})`
+    );
+    for (const s of report.siteQa.sites) {
+      lines.push(`  - ${s.siteLabel}: ${s.status} (${s.loadMs}ms)`);
+      if (s.brokenLinks.length) lines.push(`    broken links: ${s.brokenLinks.join(", ")}`);
+    }
   }
   return lines.join("\n");
 }

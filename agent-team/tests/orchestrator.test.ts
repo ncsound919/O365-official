@@ -12,6 +12,7 @@ function auditor(status: "healthy" | "degraded" | "critical"): AuditorReport {
     paymentFlow: { checks: [], overall: "ok" },
     dataConsistency: "not-yet-defined",
     repoHealth: [],
+    siteQa: { suite: "all", status: "pass", passed: 1, failed: 0, errored: 0, sites: [], detail: "all sites passed" },
     overallStatus: status,
   };
 }
