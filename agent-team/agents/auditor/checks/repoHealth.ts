@@ -93,17 +93,55 @@ export function checkRepoHealth(opts: RepoHealthOptions = {}): RepoHealthResult[
     });
   }
 
-  // OWASP dep-scan (SCA). Heavy (generates a BOM via cdxgen) — reports config
-  // status inline; the actual scan runs on the Draymond scheduler, not here.
+  // OWASP dep-scan (SCA). Scans configured packages via --purl (lighter than a
+  // full BOM build). Reports config-status when no packages are configured.
   if (opts.enableDepScan) {
-    results.push({
-      check: "sca (dep-scan)",
-      status: which("depscan") ? "pass" : "not-available",
-      detail: which("depscan")
-        ? "installed — heavy BOM scan runs on schedule, not inline"
-        : "depscan not installed — pip install owasp-depscan (needs packages/analysis-lib)",
-      tool: "dep-scan",
-    });
+    if (!which("depscan")) {
+      results.push({
+        check: "sca (dep-scan)",
+        status: "not-available",
+        detail: "depscan not installed — pip install owasp-depscan (needs packages/analysis-lib)",
+        tool: "dep-scan",
+      });
+    } else {
+      const purls = (opts.packages ?? [])
+        .slice(0, 8)
+        .map((p) => (p.includes("@") ? `pkg:npm/${p.replace("@", "@")}` : `pkg:pypi/${p.replace("==", "@")}`))
+        .filter((p) => !/@@/.test(p));
+      if (purls.length === 0) {
+        results.push({
+          check: "sca (dep-scan)",
+          status: "pass",
+          detail: "depscan installed; no packages configured for --purl scan",
+          tool: "dep-scan",
+        });
+      } else {
+        let findings = 0;
+        const details: string[] = [];
+        for (const purl of purls) {
+          try {
+            const out = execFileSync("depscan", ["--purl", purl, "--no-banner"], {
+              encoding: "utf-8",
+              timeout: 60_000,
+              stdio: "pipe",
+            });
+            const vulnMatches = out.match(/(\d+) vulnerabilities found/i);
+            const n = vulnMatches ? Number(vulnMatches[1]) : /vulnerabilit/i.test(out) && /No vulnerabilities/.test(out) ? 0 : null;
+            if (n === null) continue;
+            findings += n;
+            details.push(`${purl.split("/").pop()}: ${n}`);
+          } catch {
+            details.push(`${purl.split("/").pop()}: error`);
+          }
+        }
+        results.push({
+          check: "sca (dep-scan)",
+          status: findings > 0 ? "fail" : "pass",
+          detail: findings > 0 ? `${findings} vulnerabilities: ${details.join(", ")}` : `clean: ${details.join(", ")}`,
+          tool: "dep-scan",
+        });
+      }
+    }
   }
 
   // Nuclei vuln scan (optional, target-based). Quick targeted scan inline.
