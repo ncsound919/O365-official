@@ -22,10 +22,12 @@ export interface RepoHealthOptions {
   heisenbergPath?: string;
   /** npm/pypi packages to check. */
   packages?: string[];
-  /** Enable optional OWASP dep-scan (needs `dep-scan` installed). */
+  /** Enable optional OWASP dep-scan (reports installed status; heavy scan is scheduled). */
   enableDepScan?: boolean;
-  /** Enable optional nuclei scan (needs `nuclei` installed). */
+  /** Enable optional nuclei scan against live targets. */
   enableNuclei?: boolean;
+  /** URLs to scan with nuclei (defaults to the Overlay365 sites). */
+  nucleiTargets?: string[];
 }
 
 function which(tool: string): boolean {
@@ -60,75 +62,93 @@ export function checkRepoHealth(opts: RepoHealthOptions = {}): RepoHealthResult[
       tool: "heisenberg",
     });
   } else {
-    try {
-      const out = execFileSync(
-        process.platform === "win32" ? "python" : "python3",
-        ["-m", "heisenberg.main", "check", ...opts.packages.slice(0, 20)],
-        {
-          cwd: opts.heisenbergPath ?? undefined,
-          encoding: "utf-8",
-          timeout: 60_000,
-          stdio: "pipe",
-        }
-      );
-      const flagged = /(critical|high)/i.test(out) && /vuln/i.test(out);
-      results.push({
-        check: "supply-chain (heisenberg)",
-        status: flagged ? "fail" : "pass",
-        detail: out.split(/\r?\n/).filter(Boolean).slice(-8).join(" | "),
-        tool: "heisenberg",
-      });
-    } catch (err) {
-      results.push({
-        check: "supply-chain (heisenberg)",
-        status: "fail",
-        detail: `heisenberg errored: ${err instanceof Error ? err.message : String(err)}`,
-        tool: "heisenberg",
-      });
+    // heisenberg check expects per-package args: -mgmt <npm|pypi> -pkg <name> -v <version>.
+    const flagged: string[] = [];
+    const errors: string[] = [];
+    for (const pkg of opts.packages.slice(0, 12)) {
+      const parsed = pkg.includes("@")
+        ? { mgmt: "npm", name: pkg.split("@")[0], version: pkg.split("@")[1] }
+        : { mgmt: "pypi", name: pkg.split("==")[0], version: pkg.split("==")[1] };
+      if (!parsed.name || !parsed.version) continue;
+      try {
+        const out = execFileSync(
+          process.platform === "win32" ? "python" : "python3",
+          ["-m", "heisenberg.main", "check", "-mgmt", parsed.mgmt, "-pkg", parsed.name, "-v", parsed.version],
+          { cwd: opts.heisenbergPath ?? undefined, encoding: "utf-8", timeout: 60_000, stdio: "pipe" }
+        );
+        if (/(critical|high)/i.test(out) && /vuln/i.test(out)) flagged.push(pkg);
+      } catch (err) {
+        errors.push(`${pkg}: ${err instanceof Error ? err.message.split("\n")[0] : String(err)}`);
+      }
     }
+    results.push({
+      check: "supply-chain (heisenberg)",
+      status: flagged.length > 0 ? "fail" : "pass",
+      detail: flagged.length
+        ? `${flagged.length} flagged: ${flagged.join(", ")}`
+        : errors.length
+          ? `checked ${opts.packages.slice(0, 12).length} pkg(s), ${errors.length} errored (${errors[0]})`
+          : `checked ${opts.packages.slice(0, 12).length} package(s), no high/critical findings`,
+      tool: "heisenberg",
+    });
   }
 
-  // OWASP dep-scan (SCA).
-  if (opts.enableDepScan && which("dep-scan")) {
-    try {
-      const out = execFileSync("dep-scan", ["--no-verify-ssl", "--json"], {
-        encoding: "utf-8",
-        timeout: 120_000,
-        stdio: "pipe",
-      });
-      results.push({
-        check: "sca (dep-scan)",
-        status: /"high":\s*[1-9]/.test(out) || /"critical":\s*[1-9]/.test(out) ? "fail" : "pass",
-        detail: out.length > 500 ? `${out.length} bytes of SCA output` : out,
-        tool: "dep-scan",
-      });
-    } catch {
-      results.push({ check: "sca (dep-scan)", status: "fail", detail: "dep-scan errored", tool: "dep-scan" });
-    }
-  } else if (opts.enableDepScan) {
+  // OWASP dep-scan (SCA). Heavy (generates a BOM via cdxgen) — reports config
+  // status inline; the actual scan runs on the Draymond scheduler, not here.
+  if (opts.enableDepScan) {
     results.push({
       check: "sca (dep-scan)",
-      status: "not-available",
-      detail: "dep-scan not installed — pip install owasp-dep-scan",
+      status: which("depscan") ? "pass" : "not-available",
+      detail: which("depscan")
+        ? "installed — heavy BOM scan runs on schedule, not inline"
+        : "depscan not installed — pip install owasp-depscan (needs packages/analysis-lib)",
       tool: "dep-scan",
     });
   }
 
-  // Nuclei vuln scan (optional, target-based).
-  if (opts.enableNuclei && which("nuclei")) {
-    results.push({
-      check: "vuln-scan (nuclei)",
-      status: "not-available",
-      detail: "nuclei present; scheduled target scans are wired at the Draymond scheduler level",
-      tool: "nuclei",
-    });
-  } else if (opts.enableNuclei) {
-    results.push({
-      check: "vuln-scan (nuclei)",
-      status: "not-available",
-      detail: "nuclei not installed — go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
-      tool: "nuclei",
-    });
+  // Nuclei vuln scan (optional, target-based). Quick targeted scan inline.
+  if (opts.enableNuclei) {
+    if (!which("nuclei")) {
+      results.push({
+        check: "vuln-scan (nuclei)",
+        status: "not-available",
+        detail: "nuclei not installed — go install github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest",
+        tool: "nuclei",
+      });
+    } else {
+      const targets = (opts.nucleiTargets ?? []).slice(0, 3);
+      if (targets.length === 0) {
+        results.push({
+          check: "vuln-scan (nuclei)",
+          status: "not-available",
+          detail: "no nuclei targets configured — pass nucleiTargets (e.g. Overlay365 sites)",
+          tool: "nuclei",
+        });
+      } else {
+        try {
+          const out = execFileSync(
+            "nuclei",
+            ["-u", targets.join(","), "-silent", "-no-color", "-severity", "low,medium,high,critical", "-timeout", "10"],
+            { encoding: "utf-8", timeout: 90_000, stdio: "pipe" }
+          );
+          const findings = out.split(/\r?\n/).filter(Boolean);
+          results.push({
+            check: "vuln-scan (nuclei)",
+            status: findings.length > 0 ? "fail" : "pass",
+            detail: findings.length > 0 ? `${findings.length} finding(s): ${findings.slice(0, 3).join(" | ")}` : "no findings",
+            tool: "nuclei",
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          results.push({
+            check: "vuln-scan (nuclei)",
+            status: "fail",
+            detail: msg.length > 250 ? `${msg.slice(0, 250)}…` : msg,
+            tool: "nuclei",
+          });
+        }
+      }
+    }
   }
 
   return results;

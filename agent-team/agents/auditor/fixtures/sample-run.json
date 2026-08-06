@@ -20,7 +20,8 @@
   "repoHealth": {
     "heisenbergPath": "C:/Users/User/Downloads/Uplift/integrations/heisenberg-ssc-health-check",
     "packages": ["next@15.5.22", "react@19.2.1"],
-    "enableDepScan": false,
-    "enableNuclei": false
+    "enableDepScan": true,
+    "enableNuclei": true,
+    "nucleiTargets": ["https://overlay365.com"]
   }
 }
