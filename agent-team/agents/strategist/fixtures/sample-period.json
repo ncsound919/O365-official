@@ -1,0 +1,50 @@
+[
+  {
+    "id": "e1",
+    "from": "user@example.com",
+    "receivedAt": "2026-07-21T09:12:00Z",
+    "subject": "Billing question",
+    "body": "Hi, the pricing page says this is affordable but the checkout was confusing. I can't understand how the free tier works. Please explain how does billing work?",
+    "platform": "cross-platform"
+  },
+  {
+    "id": "e2",
+    "from": "healthuser@example.com",
+    "receivedAt": "2026-07-22T14:03:00Z",
+    "subject": "Health dashboard broken",
+    "body": "The health dashboard won't load on my phone. It crashes every time I open it. This is a bug that has been going on for days.",
+    "platform": "health"
+  },
+  {
+    "id": "e3",
+    "from": "wealthuser@example.com",
+    "receivedAt": "2026-07-23T08:00:00Z",
+    "subject": "Love the new wealth tracker",
+    "body": "Great work! The wealth tracker is excellent and easy to understand. Thank you so much.",
+    "platform": "wealth"
+  },
+  {
+    "id": "e4",
+    "from": "justiceuser@example.com",
+    "receivedAt": "2026-07-24T10:30:00Z",
+    "subject": "Pricing concern",
+    "body": "I worry the cost is too expensive for what we get. The price feels risky as a small business. Why is it so expensive?",
+    "platform": "justice"
+  },
+  {
+    "id": "e5",
+    "from": "user2@example.com",
+    "receivedAt": "2026-07-25T16:45:00Z",
+    "subject": "re: billing question",
+    "body": "I still can't understand how the free tier works. Can you explain how does the free tier work? The pricing is confusing to me.",
+    "platform": "cross-platform"
+  },
+  {
+    "id": "e6",
+    "from": "healthuser2@example.com",
+    "receivedAt": "2026-07-26T11:20:00Z",
+    "subject": "app crashes again",
+    "body": "The app crashes when I open the dashboard. This bug won't go away, it's broken.",
+    "platform": "health"
+  }
+]

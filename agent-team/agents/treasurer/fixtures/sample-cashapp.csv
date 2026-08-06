@@ -1,0 +1,5 @@
+date,amount,note,id
+2026-07-27T10:00:00Z,25.00,Community donation,tx-001
+2026-07-28T12:30:00Z,10.00,tip,tx-002
+2026-07-29T09:00:00Z,-4.00,refund,tx-003
+2026-07-30T18:15:00Z,50.00,Donation,tx-004

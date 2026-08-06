@@ -1,0 +1,14 @@
+{
+  "sites": [
+    "https://uplift-health.vercel.app",
+    "https://uplift-wealth.onrender.com",
+    "https://uplift-justice.vercel.app",
+    "https://overlay365.com"
+  ],
+  "paymentLinks": [
+    { "name": "Stripe donate", "url": "https://buy.stripe.com/test_donate" },
+    { "name": "CashApp", "url": "https://cash.app/$overlay365" },
+    { "name": "Venmo", "url": "https://venmo.com/overlay365" }
+  ],
+  "crawlBaseUrl": "https://overlay365.com"
+}
